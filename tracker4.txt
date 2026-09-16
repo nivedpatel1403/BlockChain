@@ -1,0 +1,46 @@
+EXPERIMENT 4: SMART CONTRACT ON ETHEREUM TEST NETWORK (SEPOLIA)
+AIM: Write, compile, deploy, and interact with a smart contract on Sepolia
+public testnet using Remix + MetaMask.
+REQUIREMENTS: Browser, Internet, MetaMask extension.
+SETUP/PROCEDURE:
+PART A - Wallet setup: Install MetaMask (metamask.io) -> Create new wallet ->
+sign in / set password -> back up 12-word Secret Recovery Phrase (write on
+paper, never share) -> confirm phrase -> Settings/Advanced -> enable "Show
+test networks".
+PART B - Acquire test funds: Select Sepolia network in MetaMask -> copy wallet
+address -> use a Sepolia faucet (e.g. sepoliafaucet.com, Google Cloud Web3
+faucet) -> paste address, request funds -> wait 1-2 min for SepoliaETH (~0.05 ETH).
+PART C - Contract code (SimpleStorage.sol):
+```
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+contract SimpleStorage {
+
+    uint256 private myNumber;
+
+    function store(uint256 _newNumber) public {
+       myNumber = _newNumber;
+    }
+
+    function retrieve() public view returns (uint256) {
+       return myNumber;
+    }
+}
+```
+PART D - Compile: Solidity Compiler tab -> version 0.8.20 (or 0.8.x) -> Compile
+SimpleStorage.sol -> green checkmark.
+PART E - Deploy to Sepolia:
+1. Deploy & Run Transactions tab -> ENVIRONMENT -> "Injected Provider - MetaMask"
+   -> MetaMask popup -> Next -> Connect. ENVIRONMENT shows "Sepolia (11155111)".
+2. CONTRACT dropdown = SimpleStorage -> click orange "Deploy" -> MetaMask popup
+   to confirm tx (spends test ETH) -> Confirm.
+3. Wait; Remix terminal shows green checkmark + tx details; "Deployed Contracts"
+   shows SIMPLESTORAGE.
+VERIFY: Expand contract -> click retrieve -> returns 0 (default) -> type 42 in
+store box -> click store -> MetaMask confirm tx -> wait 5-10s -> click retrieve
+again -> returns 42.
+RESULT: SimpleStorage contract deployed & verified on Sepolia public testnet.
+VIVA: Sepolia = Ethereum public test network (Chain ID 11155111), free test ETH
+via faucets, used for testing before mainnet deployment. MetaMask = browser
+wallet extension; Injected Provider lets Remix sign real network txs via it.

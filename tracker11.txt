@@ -1,0 +1,18 @@
+EXPERIMENT 11: MULTIPLE METAMASK ACCOUNTS - BALANCE TRANSFER + TX SPEC
+AIM: Create multiple MetaMask accounts, transfer balance between them, and
+observe the transaction specification.
+PROCEDURE: Same base steps as Experiment 9, but transfers between 2 (self-
+created) Metamask accounts instead of Ganache<->Metamask.
+1. Initially transfer some ETH from an imported Ganache account into Account 1
+   in MetaMask (as done in Experiment 9). Account 1 has 31 ETH (example, from
+   Ganache transfer).
+2. Create a new account (e.g. Account 5) which starts with 0 ETH.
+3. Transfer ETH from Account 1 to Account 5: click Account1 -> Send -> select
+   Ethereum -> paste Account 5's address -> enter ETH amount to send -> click
+   Confirm to initiate transaction.
+4. Transfer is confirmed; verify updated balances in both Account1 and Account5.
+RESULT: Balance successfully transferred between 2 self-created MetaMask
+accounts; transaction specification (sender, receiver, amount) observed and verified.
+VIVA: Each MetaMask account = separate address/keypair under same seed phrase
+(HD wallet, different derivation index). Transaction spec includes: from
+address, to address, value (ETH), gas fee, and confirmation/mined status.

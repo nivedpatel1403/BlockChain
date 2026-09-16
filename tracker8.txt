@@ -1,0 +1,55 @@
+EXPERIMENT 8: TOKEN CREATION & MANAGEMENT ON ETHEREUM (LabCoin.sol)
+AIM: Create own ERC-20-style token (LabCoin) and perform minting/transfer via Remix.
+REQUIREMENTS: Browser, Remix IDE (remix.ethereum.org), no installs needed.
+CODE (LabCoin.sol):
+```
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract LabCoin {
+  string public name = "LabCoin";
+  string public symbol = "LAB";
+  uint8 public decimals = 18;
+  uint256 public totalSupply;
+
+  mapping(address => uint256) public balanceOf;
+
+  event Transfer(address indexed from, address indexed to, uint256 value);
+
+  constructor(uint256 _initialSupply) {
+     totalSupply = _initialSupply * (10 ** uint256(decimals));
+     balanceOf[msg.sender] = totalSupply;
+  }
+
+  function transfer(address _to, uint256 _value) public returns (bool success) {
+     require(balanceOf[msg.sender] >= _value, "Insufficient balance");
+     balanceOf[msg.sender] -= _value;
+     balanceOf[_to] += _value;
+     emit Transfer(msg.sender, _to, _value);
+     return true;
+  }
+}
+```
+PROCEDURE:
+1. Remix -> new file LabCoin.sol -> paste code.
+2. Solidity Compiler tab -> version 0.8.x -> Compile LabCoin.sol -> green checkmark.
+3. Deploy & Run Transactions tab -> Environment = Remix VM (Cancun) or (London).
+4. Select first account (Admin/Creator). In Deploy section, `_initialSupply`
+   field -> type 1000 (creates 1000 tokens). Click Deploy.
+5. Deployed Contracts -> expand LabCoin.
+   Task A (check balance): stay on Account 1, copy its address, click blue
+   `balanceOf`, paste address -> huge number (1000 * 10^18, since token uses
+   18 decimals like ETH, no fractional display).
+   Task B (transfer): select Account 2 ("Alice") in dropdown, copy address;
+   switch back to Account 1 (Creator, sender). In `transfer`: `_to`=Alice's
+   address, `_value` = 50000000000000000000 (50 * 10^18, i.e. 50 tokens with
+   18 zeros). Click transact.
+   Task C (validate): `balanceOf` with Alice's address -> 50000000000000000000.
+   `balanceOf` with Account 1's address -> decreased by 50 tokens.
+FORMULA: totalSupply = _initialSupply * 10^decimals (decimals=18). Token amount
+in raw units = human amount * 10^18 (must type zeros manually in Remix UI).
+RESULT: LabCoin ERC-20-style token created, minted 1000 tokens to creator, 50
+tokens transferred to Alice, balances verified.
+VIVA: `mapping(address=>uint256) balanceOf` = ledger of who owns how many tokens.
+`event Transfer` = lets external apps/listeners track transfers. decimals=18
+mirrors ETH convention so integers represent fractional token amounts.

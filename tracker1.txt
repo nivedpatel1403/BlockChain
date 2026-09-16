@@ -1,0 +1,39 @@
+EXPERIMENT 1: GENERATE PUBLIC/PRIVATE KEY USING OPENSSL
+AIM: Generate RSA public/private key pair using OpenSSL via Python.
+REQUIREMENTS: Python3, `openssl` CLI installed, `subprocess` module.
+CODE (Python):
+```
+import subprocess
+
+def generate_rsa_keys(private_key_file="private.pem", public_key_file="public.pem", bits=2048):
+  subprocess.run([
+    "openssl", "genpkey",
+    "-algorithm", "RSA",
+    "-pkeyopt", f"rsa_keygen_bits:{bits}",
+    "-out", private_key_file
+  ], check=True)
+  subprocess.run([
+    "openssl", "pkey",
+    "-in", private_key_file,
+    "-pubout",
+    "-out", public_key_file
+  ], check=True)
+  with open(public_key_file, "r") as f:
+    public_key_content = f.read()
+  print(f"Keys generated successfully ")
+  print(f"Private key saved in: {private_key_file}")
+  print(f"Public key saved in: {public_key_file}\n")
+  print(" Public Key (PEM format):\n")
+  print(public_key_content)
+
+generate_rsa_keys()
+```
+LOGIC: `openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out private.pem`
+generates private key -> `openssl pkey -in private.pem -pubout -out public.pem` derives
+public key -> read+print public key content.
+OUTPUT: Confirms keys generated, prints paths, prints public key PEM block
+(-----BEGIN PUBLIC KEY----- ... -----END PUBLIC KEY-----).
+RESULT: RSA public/private key pair generated successfully using OpenSSL.
+VIVA: Public-key cryptography = asymmetric (2 keys: private=secret/signing/decrypt,
+public=shareable/verify/encrypt). RSA based on difficulty of factoring large primes.
+PEM = base64-encoded key format with header/footer.

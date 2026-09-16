@@ -1,0 +1,44 @@
+EXPERIMENT 9: SETUP METAMASK + CREATE WALLET + TEST NETWORK
+AIM: Install MetaMask, create a wallet, enable & switch to a test network
+(Sepolia), get test ETH, and optionally connect to a local Ganache/Hardhat node.
+REQUIREMENTS: Browser (Chrome/Firefox/Edge/Brave), MetaMask extension.
+PROCEDURE:
+INSTALL: Browser -> search official "MetaMask extension" (publisher MetaMask/
+ConsenSys) -> Add to Browser -> accept permissions -> fox icon appears in toolbar.
+CREATE WALLET: Click fox icon -> Get Started -> Create a Wallet -> choose data
+pref -> set extension password (unlocks MetaMask on this device only, NOT the
+seed phrase) -> Create -> MetaMask shows 12/24-word Secret Recovery Phrase ->
+write on paper offline, store securely, never store digitally/screenshot/share
+-> confirm phrase by selecting words in order -> Account 1 + public address shown.
+VIEW/EXPORT KEYS: Click account name to copy address. Export private key (not
+recommended unless needed): Account -> Account details -> Export Private Key ->
+enter password -> copy key; keep in local .env, never commit to git.
+ENABLE TEST NETWORKS: Account icon -> Settings -> Advanced -> toggle "Show test
+networks" ON.
+SWITCH TO SEPOLIA: Network dropdown (top center) -> select "Sepolia Test Network".
+ADD SEPOLIA MANUALLY (if not listed): Network dropdown -> Add Network -> Add a
+network manually. Fields: Network name=Sepolia Testnet; RPC URL=
+https://sepolia.infura.io/v3/YOUR_INFURA_KEY (or other provider); Chain ID=
+11155111; Currency symbol=ETH; Block explorer URL (optional)=
+https://sepolia.etherscan.io. Save.
+GET TEST ETH: Search "Sepolia faucet" -> reputable faucet (may need GitHub/
+Twitter login) -> paste Sepolia address -> request funds -> wait for confirm,
+balance updates in MetaMask.
+CONNECT TO LOCAL NODE (Ganache/Hardhat):
+- Hardhat: `npx hardhat node` (runs at http://127.0.0.1:8545).
+- Ganache: open GUI -> Quickstart (Ethereum) -> RPC = http://127.0.0.1:7545,
+  10 accounts x 100 ETH each, each with private key.
+- MetaMask -> Network dropdown -> Add Network: Network name=Localhost 8545;
+  RPC URL=http://127.0.0.1:8545; Chain ID=1337 (Hardhat sometimes 31337);
+  Currency=ETH.
+IMPORT GANACHE ACCOUNT INTO METAMASK: Ganache GUI -> click account -> Show Keys
+-> copy Private Key (e.g. 0x4f3edf983ac636a65a842ce7c78d9aa706d3b113b37bb06b1a02
+d3e268fc8886) -> MetaMask -> Account icon -> Import Account -> paste key ->
+Import -> shows Ganache account w/ 100 test ETH.
+VERIFY: With Sepolia selected, check Activity/Assets for ETH balance/txs; send
+small test transfer to confirm it works.
+RESULT: MetaMask installed, wallet created, Sepolia test network configured,
+test ETH acquired, local Ganache account imported successfully.
+VIVA: Seed phrase = master key to regenerate all accounts/keys - never share.
+Faucet = free testnet currency dispenser for developers. Chain ID uniquely
+identifies a network (Sepolia=11155111, Ganache default=5777, Hardhat=31337/1337).

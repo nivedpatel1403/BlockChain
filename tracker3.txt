@@ -1,0 +1,53 @@
+EXPERIMENT 3: SMART CONTRACT ON LOCAL BLOCKCHAIN (GANACHE + REMIX)
+AIM: Deploy Solidity smart contract from Remix IDE to local Ganache blockchain;
+fix EVM version mismatch; interpret deployment logs.
+REQUIREMENTS: Browser, Internet, Ganache UI (desktop), Remix IDE (remix.ethereum.org).
+SETUP:
+1. Install & launch Ganache -> click "QUICKSTART" (Ethereum).
+2. Note: RPC SERVER = http://127.0.0.1:7545 ; NETWORK ID = 5777. Leave running.
+CODE (Storage.sol):
+```
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract Storage {
+  uint256 public myNumber;
+
+  function store(uint256 _num) public {
+    myNumber = _num;
+  }
+
+  function retrieve() public view returns (uint26) {
+    return myNumber;
+  }
+}
+```
+[MANUAL NOTE: `retrieve()` return type shown as `uint26` in manual - likely typo
+for `uint256`; as written this is not valid Solidity (no uint26 type) and would
+fail to compile. Preserved as-is per manual.]
+PROCEDURE:
+1. In Remix, create Storage.sol, paste code above.
+2. Solidity compiler tab -> select version matching pragma (0.8.x).
+3. Advanced Configurations -> set EVM VERSION = istanbul (to match Ganache's older EVM).
+4. Click "Compile Storage.sol" -> green checkmark = success.
+5. Deploy & Run Transactions tab -> ENVIRONMENT dropdown -> select "External HTTP
+   Provider" -> enter endpoint http://127.0.0.1:7545 -> OK. ACCOUNT dropdown
+   populates with 10 Ganache accounts, each 100 ETH.
+6. Select Storage in CONTRACT dropdown -> click orange "Deploy".
+7. Remix terminal shows tx log: block, from, to: Storage.(constructor), hash,
+   "status: 0x1 Transaction mined and execution succeed".
+8. In "Deployed Contracts": click retrieve -> returns 0. Enter 42 in store field,
+   click store. Click retrieve again -> returns 42.
+9. In Ganache "TRANSACTIONS" tab: 2 entries - "Contract Creation" + "Contract Call".
+KEY CONCEPTS:
+- "Gas estimation errored" error = EVM version mismatch: modern Solidity (0.8.x)
+  compiles for newer EVM (e.g. shanghai, uses PUSH0 opcode) but Ganache runs
+  older EVM (istanbul) which doesn't understand new opcodes -> deployment fails.
+  FIX: set compiler's EVM VERSION to istanbul in Remix Advanced Configurations.
+- "Sourcify verification failed: Chain 5777 not found" after successful deploy =
+  NOT an error. Sourcify only verifies contracts on public chains; local Ganache
+  chain (ID 5777) is private, so Sourcify can't find it. Expected/harmless.
+RESULT: Storage.sol deployed & tested on local Ganache blockchain via Remix.
+VIVA: EVM = runtime "OS" executing contract bytecode; versions add opcodes via
+hard forks (istanbul, paris, shanghai...). Compiler and target chain's EVM
+version must be compatible or deployment fails.

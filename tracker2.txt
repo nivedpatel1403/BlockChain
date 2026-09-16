@@ -1,0 +1,173 @@
+EXPERIMENT 2: SIMPLE BLOCKCHAIN USING PYTHON
+AIM: Implement a basic blockchain with blocks linked via previous_hash + SHA-256.
+REQUIREMENTS: Python3, `hashlib`, `time` (+`math` in alt version).
+
+PART A - BASIC BLOCKCHAIN:
+```
+import hashlib
+import time
+
+class Block:
+  def __init__(self, index, timestamp, data, previous_hash):
+    self.index = index
+    self.timestamp = timestamp
+    self.data = data
+    self.previous_hash = previous_hash
+    self.hash = self.calculate_hash()
+
+  def calculate_hash(self):
+    block_string = str(self.index) + str(self.timestamp) + str(self.data) + str(self.previous_hash)
+    return hashlib.sha256(block_string.encode()).hexdigest()
+
+class Blockchain:
+  def __init__(self):
+    self.chain = [self.create_genesis_block()]
+
+  def create_genesis_block(self):
+    return Block(0, time.ctime(), "Genesis Block", "0")
+
+  def get_latest_block(self):
+    return self.chain[-1]
+
+  def add_block(self, new_data):
+    prev_block = self.get_latest_block()
+    new_block = Block(len(self.chain), time.ctime(), new_data, prev_block.hash)
+    self.chain.append(new_block)
+
+  def is_chain_valid(self):
+    for i in range(1, len(self.chain)):
+      current = self.chain[i]
+      prev = self.chain[i-1]
+      if current.hash != current.calculate_hash():
+        print("Block", i, "has been tampered!")
+        return False
+      if current.previous_hash != prev.hash:
+        print("Block", i, "previous hash does not match!")
+        return False
+    return True
+
+my_chain = Blockchain()
+my_chain.add_block("Alice pays Bob 10 coins")
+my_chain.add_block("Bob pays Charlie 5 coins")
+my_chain.add_block("Charlie pays Dave 2 coins")
+
+for block in my_chain.chain:
+  print("Index:", block.index)
+  print("Timestamp:", block.timestamp)
+  print("Data:", block.data)
+  print("Hash:", block.hash)
+  print("Previous Hash:", block.previous_hash)
+  print("-" * 50)
+
+print("Is blockchain valid?", my_chain.is_chain_valid())
+```
+
+PART B - ALTERNATE: WITH MERKLE ROOT + NONCE (Proof-of-Work):
+```
+import hashlib
+import time
+import math
+
+def calculate_merkle_root(transactions):
+  if not transactions:
+    return hashlib.sha256("".encode()).hexdigest()
+  tx_hashes = [hashlib.sha256(tx.encode()).hexdigest() for tx in transactions]
+  while len(tx_hashes) > 1:
+    if len(tx_hashes) % 2 != 0:
+      tx_hashes.append(tx_hashes[-1])
+    new_level = []
+    for i in range(0, len(tx_hashes), 2):
+      combined = tx_hashes[i] + tx_hashes[i+1]
+      new_level.append(hashlib.sha256(combined.encode()).hexdigest())
+    tx_hashes = new_level
+  return tx_hashes[0]
+
+class Block:
+  def __init__(self, index, timestamp, transactions, previous_hash, difficulty=2):
+    self.index = index
+    self.timestamp = timestamp
+    self.transactions = transactions
+    self.previous_hash = previous_hash
+    self.nonce = 0
+    self.merkle_root = calculate_merkle_root(transactions)
+    self.hash = self.mine_block(difficulty)
+
+  def calculate_hash(self):
+    block_string = (
+        str(self.index) +
+        str(self.timestamp) +
+        str(self.transactions) +
+        str(self.previous_hash) +
+        str(self.nonce) +
+        str(self.merkle_root)
+    )
+    return hashlib.sha256(block_string.encode()).hexdigest()
+
+  def mine_block(self, difficulty):
+    prefix = "0" * difficulty
+    while True:
+      hash_value = self.calculate_hash()
+      if hash_value.startswith(prefix):
+        return hash_value
+      else:
+        self.nonce += 1
+
+class Blockchain:
+  def __init__(self, difficulty=2):
+    self.chain = [self.create_genesis_block()]
+    self.difficulty = difficulty
+
+  def create_genesis_block(self):
+    return Block(0, time.ctime(), ["Genesis Block"], "0")
+
+  def get_latest_block(self):
+    return self.chain[-1]
+
+  def add_block(self, transactions):
+    prev_block = self.get_latest_block()
+    new_block = Block(len(self.chain), time.ctime(), transactions, prev_block.hash, self.difficulty)
+    self.chain.append(new_block)
+
+  def is_chain_valid(self):
+    for i in range(1, len(self.chain)):
+      current = self.chain[i]
+      prev = self.chain[i-1]
+      if current.hash != current.calculate_hash():
+        print("Block", i, "hash mismatch!")
+        return False
+      if current.previous_hash != prev.hash:
+        print("Block", i, "previous hash mismatch!")
+        return False
+    return True
+
+my_chain = Blockchain(difficulty=3)
+my_chain.add_block(["Alice pays Bob 10 coins", "Bob pays Charlie 5 coins"])
+my_chain.add_block(["Charlie pays Dave 2 coins", "Dave pays Eve 1 coin"])
+
+for block in my_chain.chain:
+  print("\nIndex:", block.index)
+  print("Timestamp:", block.timestamp)
+  print("Transactions:", block.transactions)
+  print("Merkle Root:", block.merkle_root)
+  print("Nonce:", block.nonce)
+  print("Hash:", block.hash)
+  print("Previous Hash:", block.previous_hash)
+  print("-" * 60)
+
+print("\nIs blockchain valid?", my_chain.is_chain_valid())
+```
+FORMULA/ALGO: Block hash = SHA256(index+timestamp+data/transactions+prev_hash[+nonce+merkle_root]).
+PoW mining: increment nonce until hash startswith "0"*difficulty.
+Chain validity: recompute each block's hash and check == stored hash; check
+previous_hash links correctly to prior block's hash.
+INPUT: Genesis block data="Genesis Block"/["Genesis Block"], previous_hash="0";
+difficulty=2 (basic ex uses no PoW) / difficulty=3 (PoW variant).
+OUTPUT: List of blocks printed (index, timestamp, data/transactions, [merkle root,
+nonce], hash, previous hash); "Is blockchain valid? True".
+RESULT: Simple blockchain (with optional PoW+Merkle root) implemented and validated.
+VIVA: Blockchain = chain of blocks linked by cryptographic hash of previous block ->
+tamper-evidence (changing any block changes its hash, breaking the link).
+Genesis block = first block, hardcoded, previous_hash="0". Merkle root = single
+hash summarizing all transactions in a block (built by pairwise hashing leaves
+up to root; odd count -> duplicate last hash). Proof-of-Work = find nonce s.t.
+hash meets difficulty target (leading zeros) -> makes mining computationally costly.
