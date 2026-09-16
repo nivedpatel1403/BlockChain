@@ -1,10 +1,9 @@
 BIC702 - BLOCKCHAIN TECHNOLOGY LAB - COMPRESSED CHEAT SHEET
 (VII SEM, CSE-IoT/CyberSec/Blockchain, BIT)
 
-[MANUAL NOTE: Manual's "List of Experiments" lists 12 experiments, but the
-manual body contains NO write-up for Experiment 6 (Hyperledger Fabric chaincode)
-and NO write-up for Experiment 12 (Hyperledger Fabric 2-org network setup).
-Only Experiments 1,2,3,4,5,7,8,9,10,11 have content below.]
+[MANUAL NOTE: Manual's "List of Experiments" lists 12 experiments; Experiment 6
+(Hyperledger Fabric chaincode) is provided below; NO write-up in manual for
+Experiment 12 (Hyperledger Fabric 2-org network setup).]
 
 LIST OF EXPERIMENTS (as given):
 1. Generate public/private key using OpenSSL
@@ -12,7 +11,7 @@ LIST OF EXPERIMENTS (as given):
 3. Smart contract on local Blockchain (Ganache)
 4. Smart contract on Ethereum test networks (Sepolia)
 5. Cryptocurrency for multiple users using Python
-6. Chain code in Hyperledger Fabric [NO CONTENT IN MANUAL]
+6. Chain code in Hyperledger Fabric
 7. Solidity smart contract - balance transfer between accounts
 8. Token Creation and Management on Ethereum
 9. Setup Metamask + wallet + Test Network
@@ -450,6 +449,201 @@ PROCEDURE (walkthrough):
 RESULT: CLI multi-user cryptocurrency wallet built & tested on simulated chain.
 VIVA: Wallet = identified by address; Gas = fee to process tx on network; Double-
 spend prevention = network rejects tx if sender balance insufficient.
+
+====================================================================
+EXPERIMENT 6: CHAIN CODE IN HYPERLEDGER FABRIC
+HYPERLEDGER FABRIC EXAM CHEAT SHEET
+Step-by-Step Guide: Setting Up, Developing, Deploying, Interacting with Custom Chaincode
+
+PHASE 1: ENVIRONMENT PREREQUISITES & SETUP
+
+STEP 1 - Install System Updates + Go
+sudo apt update && sudo apt install -y golang-go
+
+STEP 2 - Install Docker
+Requirements: Docker + Docker Compose; Docker daemon running; current user permitted for docker commands.
+sudo usermod -aG docker $USER
+
+STEP 3 - Download Fabric Installation Script
+curl -sSLO https://raw.githubusercontent.com/hyperledger/fabric/main/scripts/install-fabric.sh
+chmod +x install-fabric.sh
+
+STEP 4 - Pull Docker Images, Samples, Binaries
+./install-fabric.sh docker samples binary
+Why samples: fabric-samples contains test-network scripts used to quickly start Fabric nodes (Peers/Orderers).
+
+PHASE 2: WRITING SMART CONTRACT (CHAINCODE) FROM SCRATCH
+
+STEP 1 - Initialize Go Project
+mkdir ~/exam-chaincode
+cd ~/exam-chaincode
+go mod init exam-chaincode
+
+STEP 2 - smartcontract.go
+Purpose: logic for creating, reading, deleting assets.
+Asset fields: AppraisedValue, Color, ID, Owner, Size.
+[MANUAL NOTE] Manual says Color/Size are generic exam asset properties; fields may be renamed everywhere (e.g. StudentID, Name, Grade) to simulate university records.
+
+CODE:
+```go
+package chaincode
+import (
+	"encoding/json"
+	"fmt"
+	"github.com/hyperledger/fabric-contract-api-go/v2/contractapi"
+)
+type SmartContract struct {
+	contractapi.Contract
+}
+type Asset struct {
+	AppraisedValue int `json:"AppraisedValue"`
+	Color string `json:"Color"`
+	ID string `json:"ID"`
+	Owner string `json:"Owner"`
+	Size int `json:"Size"`
+}
+func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) error {
+	assets := []Asset{
+		{ID:"asset1", Color:"blue", Size:5, Owner:"Tomoko", AppraisedValue:300},
+		{ID:"asset2", Color:"red", Size:5, Owner:"Brad", AppraisedValue:400},
+	}
+	for _, asset := range assets {
+		assetJSON, err := json.Marshal(asset)
+		if err != nil {
+			return err
+		}
+		err = ctx.GetStub().PutState(asset.ID, assetJSON)
+		if err != nil {
+			return fmt.Errorf("failed to put to world state. %w", err)
+		}
+	}
+	return nil
+}
+func (s *SmartContract) AssetExists(ctx contractapi.TransactionContextInterface, id string) (bool, error) {
+	assetJSON, err := ctx.GetStub().GetState(id)
+	if err != nil {
+		return false, fmt.Errorf("failed to read from world state: %w", err)
+	}
+	return assetJSON != nil, nil
+}
+func (s *SmartContract) CreateAsset(ctx contractapi.TransactionContextInterface, id string, color string, size int, owner string, appraisedValue int) error {
+	exists, err := s.AssetExists(ctx, id)
+	if err != nil {
+		return err
+	}
+	if exists {
+		return fmt.Errorf("the asset %s already exists", id)
+	}
+	asset := Asset{
+		ID:id,
+		Color:color,
+		Size:size,
+		Owner:owner,
+		AppraisedValue:appraisedValue,
+	}
+	assetJSON, err := json.Marshal(asset)
+	if err != nil {
+		return err
+	}
+	return ctx.GetStub().PutState(id, assetJSON)
+}
+func (s *SmartContract) ReadAsset(ctx contractapi.TransactionContextInterface, id string) (*Asset, error) {
+	assetJSON, err := ctx.GetStub().GetState(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read from world state: %w", err)
+	}
+	if assetJSON == nil {
+		return nil, fmt.Errorf("the asset %s does not exist", id)
+	}
+	var asset Asset
+	err = json.Unmarshal(assetJSON, &asset)
+	if err != nil {
+		return nil, err
+	}
+	return &asset, nil
+}
+func (s *SmartContract) DeleteAsset(ctx contractapi.TransactionContextInterface, id string) error {
+	exists, err := s.AssetExists(ctx, id)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return fmt.Errorf("the asset %s does not exist", id)
+	}
+	return ctx.GetStub().DelState(id)
+}
+```
+
+STEP 3 - main.go
+CODE:
+```go
+package main
+import (
+	"log"
+	"exam-chaincode/chaincode"
+	"github.com/hyperledger/fabric-contract-api-go/v2/contractapi"
+)
+func main() {
+	examChaincode, err := contractapi.NewChaincode(&chaincode.SmartContract{})
+	if err != nil {
+		log.Panicf("Error creating exam chaincode: %v", err)
+	}
+	if err := examChaincode.Start(); err != nil {
+		log.Panicf("Error starting exam chaincode: %v", err)
+	}
+}
+```
+
+STEP 4 - Download Dependencies
+cd ~/exam-chaincode
+go mod tidy
+
+PHASE 3: NETWORK INITIALIZATION & CUSTOM CHAINCODE DEPLOYMENT
+
+STEP 1 - Bring Up Fabric Network + Create Channel
+cd ~/fabric-samples/test-network
+./network.sh up createChannel -c blocklab -ca
+
+STEP 2 - Deploy Custom Chaincode
+./network.sh deployCC -ccn exam_cc -ccp ~/exam-chaincode -ccl go -c blocklab
+
+PHASE 4: INTERACTING & TESTING (CREATE, READ, DELETE)
+
+STEP 1 - Configure Environment Variables for Org1 Admin
+Run in test-network directory:
+export PATH=${PWD}/../bin:$PATH
+export FABRIC_CFG_PATH=$PWD/../config/
+export CORE_PEER_TLS_ENABLED=true
+export CORE_PEER_LOCALMSPID="Org1MSP"
+export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
+export CORE_PEER_ADDRESS=localhost:7051
+export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
+export ORDERER_CA=${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
+export ORG1_CA=${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
+export ORG2_CA=${PWD}/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt
+
+STEP 2 - Initialize Ledger
+Default assets from InitLedger: asset1=blue,size5,Tomoko,300; asset2=red,size5,Brad,400.
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile $ORDERER_CA -C blocklab -n exam_cc --peerAddresses localhost:7051 --tlsRootCertFiles $ORG1_CA --peerAddresses localhost:9051 --tlsRootCertFiles $ORG2_CA -c '{"function":"InitLedger","Args":[]}'
+
+STEP 3 - Create New Asset
+Input: asset3, green, 10, Alice, 500.
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile $ORDERER_CA -C blocklab -n exam_cc --peerAddresses localhost:7051 --tlsRootCertFiles $ORG1_CA --peerAddresses localhost:9051 --tlsRootCertFiles $ORG2_CA -c '{"function":"CreateAsset","Args":["asset3","green","10","Alice","500"]}'
+
+STEP 4 - Read Asset
+peer chaincode query -C blocklab -n exam_cc -c '{"Args":["ReadAsset","asset3"]}'
+Expected: asset3 data returned.
+
+STEP 5 - Delete Asset
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile $ORDERER_CA -C blocklab -n exam_cc --peerAddresses localhost:7051 --tlsRootCertFiles $ORG1_CA --peerAddresses localhost:9051 --tlsRootCertFiles $ORG2_CA -c '{"function":"DeleteAsset","Args":["asset3"]}'
+Verify by running Step 4 ReadAsset query again; asset3 should no longer exist.
+
+OPTIONAL PHASE - ORG2 CONFIGURATION
+Test interactions from Org2; queries use localhost:9051.
+export CORE_PEER_LOCALMSPID="Org2MSP"
+export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt
+export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp
+export CORE_PEER_ADDRESS=localhost:9051
 
 ====================================================================
 EXPERIMENT 7: SOLIDITY SMART CONTRACT - BALANCE TRANSFER (BalanceTransfer.sol)
