@@ -1,0 +1,199 @@
+EXPERIMENT 1: GENERATE PUBLIC AND PRIVATE KEY USING OPENSSL
+
+winget install -e --id Python.Python.3.12
+winget install -e --id ShiningLight.OpenSSL.Light
+
+CODE:
+import subprocess
+def generate_rsa_keys(private_key_file="private.pem",public_key_file="public.pem",bits=2048):
+    subprocess.run(["openssl","genpkey","-algorithm","RSA","-pkeyopt",f"rsa_keygen_bits:{bits}","-out",private_key_file],check=True)
+    subprocess.run(["openssl","pkey","-in",private_key_file,"-pubout","-out",public_key_file],check=True)
+    with open(public_key_file,"r") as f:
+        public_key_content=f.read()
+    print(f"Keys generated successfully ")
+    print(f"Private key saved in: {private_key_file}")
+    print(f"Public key saved in: {public_key_file}\n")
+    print(" Public Key (PEM format):\n")
+    print(public_key_content)
+generate_rsa_keys()
+
+EXPERIMENT 2: CREATE A SIMPLE BLOCKCHAIN USING PYTHON
+STEPS: Install Python → create Python file/import hashlib,time → Block class → Blockchain+genesis block → add blocks using previous block hash → print blocks → validate → verify "Is blockchain valid? True".
+
+CODE:
+import hashlib
+import time
+class Block:
+    def __init__(self,index,timestamp,data,previous_hash):
+        self.index=index
+        self.timestamp=timestamp
+        self.data=data
+        self.previous_hash=previous_hash
+        self.hash=self.calculate_hash()
+    def calculate_hash(self):
+        block_string=str(self.index)+str(self.timestamp)+str(self.data)+str(self.previous_hash)
+        return hashlib.sha256(block_string.encode()).hexdigest()
+class Blockchain:
+    def __init__(self):
+        self.chain=[self.create_genesis_block()]
+    def create_genesis_block(self):
+        return Block(0,time.ctime(),"Genesis Block","0")
+    def get_latest_block(self):
+        return self.chain[-1]
+    def add_block(self,new_data):
+        prev_block=self.get_latest_block()
+        new_block=Block(len(self.chain),time.ctime(),new_data,prev_block.hash)
+        self.chain.append(new_block)
+    def is_chain_valid(self):
+        for i in range(1,len(self.chain)):
+            current=self.chain[i]
+            prev=self.chain[i-1]
+            if current.hash!=current.calculate_hash():
+                print("Block",i,"has been tampered!")
+                return False
+            if current.previous_hash!=prev.hash:
+                print("Block",i,"previous hash does not match!")
+                return False
+        return True
+my_chain=Blockchain()
+my_chain.add_block("Alice pays Bob 10 coins")
+my_chain.add_block("Bob pays Charlie 5 coins")
+my_chain.add_block("Charlie pays Dave 2 coins")
+for block in my_chain.chain:
+    print("Index:",block.index)
+    print("Timestamp:",block.timestamp)
+    print("Data:",block.data)
+    print("Hash:",block.hash)
+    print("Previous Hash:",block.previous_hash)
+    print("-"*50)
+print("Is blockchain valid?",my_chain.is_chain_valid())
+
+EXPERIMENT 3: DEVELOP AND TEST SMART CONTRACT ON LOCAL BLOCKCHAIN
+STEPS: Ganache→QUICKSTART→Ethereum; RPC=http://127.0.0.1:7545, Network ID=5777 → Remix→Storage.sol→paste code → Compiler=compatible 0.8.x; Advanced Configurations→EVM VERSION=istanbul→Compile → Deploy & Run→External HTTP Provider→http://127.0.0.1:7545→Storage→Deploy → retrieve=0 → store=42→store → retrieve=42 → Ganache Transactions: Contract Creation+Contract Call.
+
+CODE:
+pragma solidity ^0.8.0;
+contract Storage {
+    uint256 public myNumber;
+    function store(uint256 _num) public {
+        myNumber=_num;
+    }
+    function retrieve() public view returns (uint26) {
+        return myNumber;
+    }
+}
+
+EXPERIMENT 4: DEVELOP AND TEST SMART CONTRACT ON ETHEREUM TEST NETWORK
+STEPS: Install MetaMask→create wallet/password→secure 12-word Secret Recovery Phrase→Show test networks ON→Sepolia → copy address→Sepolia faucet→test ETH → Remix→SimpleStorage.sol→paste code→compile 0.8.20/compatible 0.8.x → Deploy & Run→Injected Provider - MetaMask→MetaMask Next→Connect→confirm Sepolia(11155111)→SimpleStorage→Deploy→Confirm → retrieve=0 → store=42→Confirm → wait 5-10 s→retrieve=42.
+
+CODE:
+pragma solidity ^0.8.20;
+contract SimpleStorage {
+    uint256 private myNumber;
+    function store(uint256 _newNumber) public {
+        myNumber=_newNumber;
+    }
+    function retrieve() public view returns (uint256) {
+        return myNumber;
+    }
+}
+
+EXPERIMENT 5: DESIGN AND DEVELOP CRYPTOCURRENCY FOR MULTIPLE USER USING PYTHON
+STEPS: Install Python 3.8+ → Windows: mkdir BlockchainLab→cd BlockchainLab→python -m venv venv→.\venv\Scripts\activate; Linux/macOS: mkdir BlockchainLab→cd BlockchainLab→python3 -m venv venv→source venv/bin/activate → pip install "web3[tester]" → create wallet_shell.py/paste code → python wallet_shell.py → commands: balance bank; balance alice; send bank alice 50.5; balance bank; balance alice; chain → optional invalid transfer: send alice bob 2000000.
+
+CODE:
+import sys
+import cmd
+from web3 import Web3
+class WalletShell(cmd.Cmd):
+    intro='Welcome to the ClassCrypto Shell. Type help or ? to list commands.\n'
+    prompt='(crypto) > '
+    def __init__(self):
+        super().__init__()
+        self.w3=Web3(Web3.EthereumTesterProvider())
+        self.accounts=self.w3.eth.accounts
+        self.users={"bank":self.accounts[0],"alice":self.accounts[1],"bob":self.accounts[2],"charlie":self.accounts[3]}
+        print(f"Blockchain initialized with {len(self.users)} users: Bank, Alice, Bob, Charlie")
+    def do_balance(self,arg):
+        name=arg.lower().strip()
+        if name not in self.users:
+            print(f"Error: User '{name}' not found. Available: {list(self.users.keys())}")
+            return
+        address=self.users[name]
+        wei_balance=self.w3.eth.get_balance(address)
+        eth_balance=self.w3.from_wei(wei_balance,'ether')
+        print(f"User: {name.capitalize()}")
+        print(f"Address: {address}")
+        print(f"Balance: {eth_balance} ETH")
+    def do_send(self,arg):
+        args=arg.split()
+        if len(args)!=3:
+            print("Error: Usage is 'send <from> <to> <amount>'")
+            return
+        sender,receiver,amount=args[0].lower(),args[1].lower(),args[2]
+        if sender not in self.users or receiver not in self.users:
+            print("Error: Unknown user. Please use: bank, alice, bob, charlie")
+            return
+        try:
+            amount_eth=float(amount)
+            sender_addr=self.users[sender]
+            receiver_addr=self.users[receiver]
+            print(f"Processing transaction: {sender.capitalize()} -> {receiver.capitalize()} ({amount_eth} ETH)...")
+            tx_hash=self.w3.eth.send_transaction({'from':sender_addr,'to':receiver_addr,'value':self.w3.to_wei(amount_eth,'ether')})
+            receipt=self.w3.eth.wait_for_transaction_receipt(tx_hash)
+            print(f"Success! Block #{receipt.blockNumber} mined.")
+            print(f"Gas Used: {receipt.gasUsed} (Cost to process)")
+            print(f"Tx Hash: {tx_hash.hex()}")
+        except ValueError as e:
+            print(f"Transaction Failed: {e}")
+        except Exception as e:
+            print(f"System Error: {e}")
+    def do_chain(self,arg):
+        latest=self.w3.eth.get_block('latest')
+        print("\n--- LATEST BLOCK ---")
+        print(f"Block Number: {latest.number}")
+        print(f"Block Hash:   {latest.hash.hex()}")
+        print(f"Transactions: {len(latest.transactions)}")
+        print("--------------------")
+    def do_exit(self,arg):
+        print("Closing connection...")
+        return True
+if __name__=='__main__':
+    try:
+        WalletShell().cmdloop()
+    except KeyboardInterrupt:
+        print("\nExiting...")
+
+EXPERIMENT 6: CHAIN CODE IN HYPERLEDGER FABRIC
+STEPS: sudo apt update && sudo apt install -y golang-go → sudo usermod -aG docker $USER → curl -sSLO https://raw.githubusercontent.com/hyperledger/fabric/main/scripts/install-fabric.sh → chmod +x install-fabric.sh → ./install-fabric.sh docker samples binary → mkdir ~/exam-chaincode → cd ~/exam-chaincode → go mod init exam-chaincode → create smartcontract.go+main.go (paste code) → go mod tidy → cd ~/fabric-samples/test-network → ./network.sh up createChannel -c blocklab -ca → ./network.sh deployCC -ccn exam_cc -ccp ~/exam-chaincode -ccl go -c blocklab → set env vars (Org1) → InitLedger → CreateAsset asset3 → ReadAsset asset3 → DeleteAsset asset3.
+
+KEY ENV VARS (Org1):
+export PATH=${PWD}/../bin:$PATH
+export FABRIC_CFG_PATH=$PWD/../config/
+export CORE_PEER_TLS_ENABLED=true
+export CORE_PEER_LOCALMSPID="Org1MSP"
+export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
+export CORE_PEER_ADDRESS=localhost:7051
+export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
+export ORDERER_CA=${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
+export ORG1_CA=${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
+export ORG2_CA=${PWD}/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt
+
+INVOKE BASE CMD: peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile $ORDERER_CA -C blocklab -n exam_cc --peerAddresses localhost:7051 --tlsRootCertFiles $ORG1_CA --peerAddresses localhost:9051 --tlsRootCertFiles $ORG2_CA
+
+InitLedger:   <INVOKE BASE CMD> -c '{"function":"InitLedger","Args":[]}'
+CreateAsset:  <INVOKE BASE CMD> -c '{"function":"CreateAsset","Args":["asset3","green","10","Alice","500"]}'
+ReadAsset:    peer chaincode query -C blocklab -n exam_cc -c '{"Args":["ReadAsset","asset3"]}'
+DeleteAsset:  <INVOKE BASE CMD> -c '{"function":"DeleteAsset","Args":["asset3"]}'
+
+smartcontract.go (key parts):
+package chaincode
+import ("encoding/json";"fmt";"github.com/hyperledger/fabric-contract-api-go/v2/contractapi")
+type SmartContract struct{contractapi.Contract}
+type Asset struct{AppraisedValue int `json:"AppraisedValue"`;Color string `json:"Color"`;ID string `json:"ID"`;Owner string `json:"Owner"`;Size int `json:"Size"`}
+// Functions: InitLedger (seeds asset1,asset2) | AssetExists (GetState check) | CreateAsset (PutState) | ReadAsset (GetState+Unmarshal) | DeleteAsset (DelState)
+
+main.go (key parts):
+package main
+import ("log";"exam-chaincode/chaincode";"github.com/hyperledger/fabric-contract-api-go/v2/contractapi")
+func main(){cc,err:=contractapi.NewChaincode(&chaincode.SmartContract{});if err!=nil{log.Panicf("%v",err)};if err:=cc.Start();err!=nil{log.Panicf("%v",err)}}
