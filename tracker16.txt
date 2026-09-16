@@ -165,7 +165,16 @@ if __name__=='__main__':
         print("\nExiting...")
 
 EXPERIMENT 6: CHAIN CODE IN HYPERLEDGER FABRIC
-STEPS: sudo apt update && sudo apt install -y golang-go → sudo usermod -aG docker $USER → curl -sSLO https://raw.githubusercontent.com/hyperledger/fabric/main/scripts/install-fabric.sh → chmod +x install-fabric.sh → ./install-fabric.sh docker samples binary → mkdir ~/exam-chaincode → cd ~/exam-chaincode → go mod init exam-chaincode → create smartcontract.go+main.go (paste code) → go mod tidy → cd ~/fabric-samples/test-network → ./network.sh up createChannel -c blocklab -ca → ./network.sh deployCC -ccn exam_cc -ccp ~/exam-chaincode -ccl go -c blocklab → set env vars (Org1) → InitLedger → CreateAsset asset3 → ReadAsset asset3 → DeleteAsset asset3.
+STEPS: sudo apt update && sudo apt install -y golang-go → 
+sudo usermod -aG docker $USER → curl -sSLO https://raw.githubusercontent.com/hyperledger/fabric/main/scripts/install-fabric.sh → 
+chmod +x install-fabric.sh → ./install-fabric.sh docker samples binary → 
+mkdir ~/exam-chaincode → cd ~/exam-chaincode → go mod init exam-chaincode → 
+create smartcontract.go+main.go (paste code) → 
+go mod tidy → cd ~/fabric-samples/test-network
+ → ./network.sh up createChannel -c blocklab -ca → 
+ ./network.sh deployCC -ccn exam_cc -ccp ~/exam-chaincode -ccl go -c blocklab → 
+ set env vars (Org1) → InitLedger → CreateAsset asset3 → ReadAsset asset3 → 
+ DeleteAsset asset3.
 
 KEY ENV VARS (Org1):
 export PATH=${PWD}/../bin:$PATH
